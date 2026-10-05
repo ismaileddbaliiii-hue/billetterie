@@ -1,0 +1,63 @@
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\LoginRequest;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
+
+class AuthenticatedSessionController extends Controller
+{
+    /**
+     * Display the login view.
+     */
+    public function create(): View
+    {
+        return view('auth.login');
+    }
+
+    /**
+     * Handle an incoming authentication request.
+     */
+    public function store(LoginRequest $request): RedirectResponse
+    {
+        // 1. Authentification de l'utilisateur
+        $request->authenticate();
+
+        // 2. Régénération de la session pour sécurité
+        $request->session()->regenerate();
+
+        // 3. Récupération de l'utilisateur connecté
+        $user = Auth::user();
+
+        // 4. Redirection selon le rôle (CDC Chapitre 3)
+        if ($user->role === 'Admin') {
+    return redirect()->intended(route('admin.dashboard'));
+}
+        if ($user->role === 'Organisateur') {
+    return redirect()->intended(route('organisateur.dashboard'));
+}
+
+        else {
+            // Client par défaut
+            return redirect()->intended(route('client.dashboard'));
+        }
+    }
+
+    /**
+     * Destroy an authenticated session.
+     */
+    public function destroy(Request $request): RedirectResponse
+    {
+        Auth::guard('web')->logout();
+
+        $request->session()->invalidate();
+
+        $request->session()->regenerateToken();
+
+        return redirect('/');
+    }
+}
